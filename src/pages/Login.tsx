@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import {  FiSun, FiMoon, FiClock } from "react-icons/fi";
@@ -9,7 +9,6 @@ import { useTheme } from "../context/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/redux/hooks/useUser";
 import { Navigate } from "react-router-dom";
-import { toast } from "@/components/ui/toast"
 import { RiRobot2Line } from "react-icons/ri";
 const Login = () => {
   const { theme, toggleTheme } = useTheme();

@@ -1,5 +1,5 @@
 import React, { Suspense, use, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthService from './services/auth.service';
 import Login from './pages/Login';
 import { useUser } from './redux/hooks/useUser';

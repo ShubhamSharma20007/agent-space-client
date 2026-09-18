@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiSun, FiMoon, FiMessageSquare } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/context/ThemeContext";

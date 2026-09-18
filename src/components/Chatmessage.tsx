@@ -9,19 +9,13 @@ import { FaRegCopy } from "react-icons/fa6";
 import { FaCheckDouble } from "react-icons/fa";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { RiRobot2Line } from "react-icons/ri";
-import LoadingAnimation from "./LoadingAnimation";
-import { useMessage } from "@/redux/hooks/useMessages";
 interface ChatMessageProps {
   message: ChatMessageData;
 }
 
 const ChatMessage = ({ message }: ChatMessageProps) => {
-  const messageRedux = useMessage()
   const isUser = message.role === "user";
   const agent = message.agentId ? agents.find((a) => a.id === message.agentId) : undefined;
-  const Icon = <RiRobot2Line size={18} />
-
   // track which image srcs (grid) failed to load
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const visibleImages = (message.images ?? []).filter((src) => !failedImages.has(src));

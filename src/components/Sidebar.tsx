@@ -3,7 +3,6 @@ import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import NewChatButton from "./Newchatbutton";
 import ChatHistoryItem from "./Chathistoryitem";
 import UserCard from "./Usercard";
-import { Badge } from "@/components/ui/badge"
 import { type ChatSession, type ChatUser, type RazorpayOptions } from "@/types/chat";
 import { RiRobot2Line } from "react-icons/ri";
 import BillingDrawer from "./BillingDrawer";

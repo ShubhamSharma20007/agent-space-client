@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, type Dispatch } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import planService from '@/services/plan.service';
 import type { CreateOrder, PaymentState, VerifyPayment } from '@/types/chat';
 export const createOrder = createAsyncThunk(

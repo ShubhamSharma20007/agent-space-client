@@ -1,5 +1,5 @@
 import messageService from '@/services/message.service';
-import { createAsyncThunk, createSlice, type Dispatch } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { AgentId, ChatMessageData, CodeBlock } from '@/types/chat';
 interface MessageState {
     messagesBySession: Record<string, ChatMessageData[]>;
@@ -36,7 +36,7 @@ export const fetchChatMessages = createAsyncThunk(
 
 export const sendChatMessage = createAsyncThunk(
     'messages/sendMessage',
-    async ({ conversationId, message,agentId,file }: { conversationId: string, message: ChatMessageData,agentId:AgentId,file?:File }, { rejectWithValue }) => {
+    async ({ conversationId, message,agentId,file }: { conversationId: string, message: ChatMessageData,agentId:AgentId,file?:File }) => {
         try {
             const response = await messageService.sendMessage(conversationId, message,agentId,file);
       
