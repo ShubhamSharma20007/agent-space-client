@@ -26,9 +26,14 @@ const Login = () => {
       if(user){
         userRedux.setUser(user?.user)
       }
-    } catch (err) {
-      console.error("Login failed:", err);
-      setError("Google sign-in failed. Please try again.");
+    } catch (err:any) {
+      if(err?.code === 'auth/popup-closed-by-user'){
+        return
+      }else{
+        setError("Google sign-in failed. Please try again.");
+      }
+  
+      
     } finally {
       setLoading(false);
     }

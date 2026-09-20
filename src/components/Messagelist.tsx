@@ -1,23 +1,53 @@
-import type { RefObject } from 'react';
-import ChatMessage from './Chatmessage';
-import type { ChatMessageData } from '@/types/chat';
-import { RiRobot2Line } from 'react-icons/ri';
-import LoadingAnimation from './LoadingAnimation';
-import { useMessage } from '@/redux/hooks/useMessages';
+import { useEffect, useRef } from "react";
+import { RiRobot2Line } from "react-icons/ri";
+import ChatMessage from "./Chatmessage";
+import LoadingAnimation from "./LoadingAnimation";
+import type { ChatMessageData } from "@/types/chat";
+import { useMessage } from "@/redux/hooks/useMessages";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+  useMessageScroller,
+} from "@/components/ui/message-scroller";
 
 interface MessageListProps {
   messages: ChatMessageData[];
-  selectedConversationId:string|null;
-  chatContainerRef: RefObject<HTMLDivElement | null>
+  selectedConversationId: string | null;
 }
 
-const MessageList = ({ messages,selectedConversationId,chatContainerRef }: MessageListProps) => {
-  const messagesRedux = useMessage()
+/**
+ * Must render INSIDE <MessageScrollerProvider>.
+ * Scrolls to the bottom every time `trigger` changes
+ * (user sends a message, loading starts, assistant reply arrives).
+ */
+function ScrollToEndOnChange({ trigger }: { trigger: string }) {
+  const { scrollToEnd } = useMessageScroller();
+
+  // keep the latest function in a ref so the effect only depends on `trigger`
+  const scrollToEndRef = useRef(scrollToEnd);
+  scrollToEndRef.current = scrollToEnd;
+
+  useEffect(() => {
+    // wait one frame so the new row is mounted and measured
+    const raf = requestAnimationFrame(() => scrollToEndRef.current());
+    return () => cancelAnimationFrame(raf);
+  }, [trigger]);
+
+  return null;
+}
+
+const MessageList = ({ messages, selectedConversationId }: MessageListProps) => {
+  const messagesRedux = useMessage();
+
   if (messages.length === 0 || !selectedConversationId) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-black font-semibold text-base mb-4">
-         <RiRobot2Line size={25}/>
+          <RiRobot2Line size={25} />
         </div>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Pick an agent and start typing
@@ -30,21 +60,47 @@ const MessageList = ({ messages,selectedConversationId,chatContainerRef }: Messa
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 message-container" ref={chatContainerRef}>
-      <div className=" flex  flex-col gap-5">
-        {messages.map((message) => (
-          <ChatMessage key={message._id ??message.createdAt} message={message} />
-        ))}
-         {messagesRedux.sending && (
-      <div className="flex gap-2 items-center px-4 py-2">
-        {/* <div className="w-7 h-7 shrink-0 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-black text-xs">
-          <RiRobot2Line size={18} />
-        </div> */}
-        <LoadingAnimation />
+    <MessageScrollerProvider
+      key={selectedConversationId}
+      autoScroll
+      defaultScrollPosition="end"
+    >
+      {/* fires on: user message added, loading on/off, assistant message added */}
+      <ScrollToEndOnChange
+        trigger={`${messages.length}-${messagesRedux.sending}`}
+      />
+
+      <div className="relative flex-1 min-h-0">
+        <MessageScroller>
+          <MessageScrollerViewport>
+            <MessageScrollerContent
+              aria-busy={messagesRedux.sending}
+              className="flex flex-col gap-5 px-4 py-6 sm:px-6"
+            >
+              {messages.map((message) => {
+                const id = message._id ?? message.createdAt;
+                return (
+                  // ❌ no scrollAnchor here
+                  <MessageScrollerItem key={id} messageId={id}>
+                    <ChatMessage message={message} />
+                  </MessageScrollerItem>
+                );
+              })}
+
+              {messagesRedux.sending && (
+                <MessageScrollerItem messageId="loading-indicator">
+                  <div className="flex gap-2 items-center px-4 py-2">
+                    <LoadingAnimation />
+                  </div>
+                </MessageScrollerItem>
+              )}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+
+          <MessageScrollerButton />
+        </MessageScroller>
       </div>
-    )}
-      </div>
-    </div>
+    </MessageScrollerProvider>
   );
 };
 

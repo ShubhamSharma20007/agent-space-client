@@ -21,17 +21,18 @@ interface ArtifactsProps {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
-  
+  /** true while the user is dragging the resize handle */
+  isResizing?: boolean;
 }
 
-function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
+function Artifacts({ isOpen, onClose, onOpen, isResizing = false }: ArtifactsProps) {
   const { latestArtifact } = useMessage();
 
   const artifact = latestArtifact?.[0] as CodeBlock | undefined;
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [copied, setCopied] = useState(false);
-  const [activeFile, setActiveFile] = useState<
-    "index.html" | "style.css" | "script.js"
+  const [activeFile, setActiveFile] = useState
+    <"index.html" | "style.css" | "script.js"
   >("index.html");
 
   if (
@@ -41,9 +42,7 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
   )
     return null;
 
-  const activeFileContent = artifact?.files.find(
-    (f) => f.name === activeFile
-  );
+  const activeFileContent = artifact?.files.find((f) => f.name === activeFile);
   const htmlContent = artifact?.files.find((f) => f.name === "index.html");
   const cssContent = artifact?.files.find((f) => f.name === "style.css");
   const jsContent = artifact?.files.find((f) => f.name === "script.js");
@@ -81,18 +80,24 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
     }, 1500);
   };
 
-  
-
-  return (
-    <div
+  const fileTab = (name: "index.html" | "style.css" | "script.js") => (
+    <button
+      key={name}
+      onClick={() => setActiveFile(name)}
       className={cn(
-        "h-full flex flex-col overflow-hidden shrink-0",
-        "bg-background text-foreground",
-        "border-l border-border",
-        "transition-[width] duration-300 ease-in-out",
-        isOpen ? "w-full sm:w-[450px] " : "w-[44px]"
+        "h-11 px-3 text-xs transition-colors cursor-pointer border-b-2",
+        activeFile === name
+          ? "text-foreground border-foreground"
+          : "text-muted-foreground border-transparent hover:text-foreground"
       )}
     >
+      {name}
+    </button>
+  );
+
+  return (
+    // width is controlled by the ResizablePanel, so just fill it
+    <div className="h-full w-full flex flex-col overflow-hidden bg-background text-foreground">
       {isOpen ? (
         <div className="flex flex-col h-full w-full bg-background">
           {/* Header */}
@@ -103,6 +108,7 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
               size="icon"
               onClick={onClose}
               className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Close artifacts"
             >
               <PanelRightClose size={17} />
             </Button>
@@ -160,54 +166,20 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
 
           {/* Files */}
           {canBePreview && (
-            <div className="h-11 px-3 border-b border-border flex items-center gap-1 overflow-x-auto overflow-y-hidden">
-              <button
-                onClick={() => setActiveFile("index.html")}
-                className={cn(
-                  "h-11 px-3 text-xs transition-colors cursor-pointer border-b-2",
-                  activeFile === "index.html"
-                    ? "text-foreground border-foreground"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                )}
-              >
-                index.html
-              </button>
-
-              <button
-                onClick={() => setActiveFile("style.css")}
-                className={cn(
-                  "h-11 px-3 text-xs transition-colors cursor-pointer border-b-2",
-                  activeFile === "style.css"
-                    ? "text-foreground border-foreground"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                )}
-              >
-                style.css
-              </button>
-
-              <button
-                onClick={() => setActiveFile("script.js")}
-                className={cn(
-                  "h-11 px-3 text-xs transition-colors cursor-pointer border-b-2",
-                  activeFile === "script.js"
-                    ? "text-foreground border-foreground"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                )}
-              >
-                script.js
-              </button>
+            <div className="h-11 px-3 border-b border-border flex items-center gap-1 overflow-x-auto overflow-y-hidden shrink-0">
+              {fileTab("index.html")}
+              {fileTab("style.css")}
+              {fileTab("script.js")}
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto min-h-0">
+          {/* Content: relative + absolute child = always exact remaining height */}
+          <div className="flex-1 min-h-0 relative">
             {activeTab === "code" ? (
-              // FIX: dark bg on the wrapper itself removes any white gap
-              // before Editor mounts/loads.
-              <div className="h-full overflow-hidden bg-[#1e1e1e]">
+              <div className="absolute inset-0 overflow-hidden bg-[#1e1e1e]">
                 {code ? (
                   <Editor
-                    height="90vh"
+                    height="100%"
                     theme="vs-dark"
                     language={detectExtension(
                       activeFileContent?.name ?? activeFile
@@ -224,7 +196,7 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
                     options={{
                       minimap: { enabled: false },
                       lineNumbers: "on",
-                      automaticLayout: true,
+                      automaticLayout: true, // re-fits when the panel is resized
                       scrollBeyondLastColumn: 10,
                       readOnly: true,
                       padding: { top: 10 },
@@ -246,10 +218,14 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
                 )}
               </div>
             ) : (
-              <div className="h-full w-full bg-white">
+              <div className="absolute inset-0 bg-white">
                 <iframe
                   title="Artifact Preview"
-                  className="w-full h-full border-0"
+                  // while dragging the handle, let mouse events pass through
+                  className={cn(
+                    "w-full h-full border-0",
+                    isResizing && "pointer-events-none"
+                  )}
                   sandbox="allow-scripts"
                   srcDoc={prevDoc}
                 />
@@ -258,8 +234,8 @@ function Artifacts({ isOpen, onClose, onOpen }: ArtifactsProps) {
           </div>
         </div>
       ) : (
-        /* Collapsed State */
-        <div className="h-full w-[44px] flex flex-col items-center bg-background">
+        /* Collapsed State (44px strip) */
+        <div className="h-full w-full flex flex-col items-center bg-background border-l border-border">
           <Button
             variant="ghost"
             size="icon"

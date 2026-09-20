@@ -44,7 +44,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
   }
 
   return (
-    <div className={cn("flex w-full gap-3", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex w-full scrollbar-none gap-3", isUser ? "justify-end" : "justify-start")}>
       {/* {!isUser && (
         <div className="w-7 h-7 shrink-0 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-black text-xs">
           {Icon ? Icon : "sh"}
