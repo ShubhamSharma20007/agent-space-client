@@ -1,4 +1,4 @@
-import { useState, useRef, type KeyboardEvent, type Ref, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent, type Ref, type ChangeEvent } from "react";
 import { FiArrowUp, FiPaperclip, FiMic, FiX } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import AgentSelector from "./Agentselector";
@@ -11,6 +11,7 @@ interface ChatComposerProps {
   disabled?: boolean;
   chatInputRef: Ref<HTMLTextAreaElement> | null;
 }
+const MAX_ROWS = 4;
 
 const ChatComposer = ({ activeAgentId, onSelectAgent, onSend, disabled, chatInputRef }: ChatComposerProps) => {
   const [value, setValue] = useState("");
@@ -19,6 +20,43 @@ const ChatComposer = ({ activeAgentId, onSelectAgent, onSend, disabled, chatInpu
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // merges the internal ref (needed for auto-resize) with whatever ref the parent passed in
+  const setTextareaRefs = (node: HTMLTextAreaElement | null) => {
+    textareaRef.current = node;
+    if (typeof chatInputRef === "function") {
+      chatInputRef(node);
+    } else if (chatInputRef && typeof chatInputRef === "object") {
+      (chatInputRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+    }
+  };
+
+  const resizeTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    // reset first so shrinking (e.g. after delete/send) is measured correctly
+    el.style.height = "auto";
+
+    const styles = window.getComputedStyle(el);
+    const lineHeight = parseFloat(styles.lineHeight) || 20;
+    const paddingTop = parseFloat(styles.paddingTop) || 0;
+    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+    const borderTop = parseFloat(styles.borderTopWidth) || 0;
+    const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+
+    const maxHeight = lineHeight * MAX_ROWS + paddingTop + paddingBottom + borderTop + borderBottom;
+    const nextHeight = Math.min(el.scrollHeight, maxHeight);
+
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
+
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [value]);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -102,7 +140,7 @@ const ChatComposer = ({ activeAgentId, onSelectAgent, onSend, disabled, chatInpu
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2">
+      <div className="flex items-end gap-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 ">
         <input
           type="file"
           ref={fileInputRef}
@@ -130,9 +168,9 @@ const ChatComposer = ({ activeAgentId, onSelectAgent, onSend, disabled, chatInpu
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          ref={chatInputRef}
+          ref={setTextareaRefs}
           placeholder="Message the agent…"
-          className="flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none max-h-40 py-1.5"
+          className="flex-1 resize-none scrollbar-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none py-1.5"
         />
 
         <Button
