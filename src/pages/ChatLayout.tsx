@@ -194,7 +194,7 @@ const ChatLayout = () => {
     });
   }, []);
 
-  const activeSession = sessions.find(
+  const activeSession = sessions?.find(
     (s) => s._id === conversationRedux.selectedConversationId
   );
 
